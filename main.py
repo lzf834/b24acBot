@@ -3,6 +3,7 @@ import logging
 import os
 import mathbot
 import parser
+import wolfram
 
 from telegram import Update, ForceReply
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
@@ -15,10 +16,11 @@ import dotenv
 from dotenv import load_dotenv
 
 #Strings
-START = "Hi! I'm b24ac, a math bot. Please send me your math problems, I will try to solve them for you."
-HELP = "Just type out your math problems, I will try to solve them for you!\nFor e.g. /math 2+4"
+START = "Hi! I'm b24ac, a math bot. Please send me your math problems, I will try to solve them for you using Python's eval function or Wolfram Alpha."
+HELP = "I use Python's eval by default, to use Wolfram, start the query with /wolf."
 ERROR = "Invalid input, Please input a mathematical formula"
 
+# Add your bot's token from botfather in the .env file
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
 
@@ -63,11 +65,30 @@ def basicCalcText(update: Update, context: CallbackContext) -> None:
     try:
         input = update.message.text
         parsed = parser.parse(input)
-        response = input + " = " + mathbot.calc(parsed)
+        response = "Python Eval: \n" + input + " = " + mathbot.calc(parsed)
         update.message.reply_text(response)
     except:
         update.message.reply_text(ERROR)
         
+def wolframQuery(update: Update, context: CallbackContext) -> None:
+    try:
+        input = update.message.text
+        
+        parsed = parser.parse(input)
+        
+        response = "Wolfram Alpha: \n" + wolfram.waquery(parsed)
+        update.message.reply_text(response)
+    except:
+        update.message.reply_text("wolfram query failed")
+        
+def wolframQuery_cmd(update: Update, context: CallbackContext) -> None:
+    try:
+        input = ' '.join(context.args)
+        parsed = parser.parse(input)
+        response = "Wolfram Alpha: \n" + wolfram.waquery(parsed)
+        update.message.reply_text(response)
+    except:
+        update.message.reply_text("wolfram query failed")
 
 def main() -> None:
     """Start the bot."""
@@ -81,6 +102,7 @@ def main() -> None:
     dispatcher.add_handler(CommandHandler("start", start))
     dispatcher.add_handler(CommandHandler("help", help_command))
     dispatcher.add_handler(CommandHandler("math", basicCalcText_cmd))
+    dispatcher.add_handler(CommandHandler("wolf", wolframQuery_cmd))
 
     # on non command i.e message - evaluate input string
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, basicCalcText))
